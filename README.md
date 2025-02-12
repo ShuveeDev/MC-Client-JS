@@ -38,7 +38,7 @@ mkdir mcbotjs && cd mcbotjs
 ```  
 2️⃣ Клонуйте репозиторій:  
 ```bash
-git clone https://github.com/ShuveeDev/MC-Client-JS .
+git clone https://github.com/ShuveeDev/MC-Client-JS
 ```  
 3️⃣ Встановіть залежності:  
 ```bash
