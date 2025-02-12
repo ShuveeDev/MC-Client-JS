@@ -2,14 +2,12 @@ const mineflayer = require('mineflayer');
 const { pathfinder, goals } = require('mineflayer-pathfinder');
 const readline = require('readline');
 
-
 let bot = mineflayer.createBot({
     host: '0.0.0.0', // IP
     port: 25565, // Порт
     username: 'ShuveeBot', // Bot Name
     version: '1.20' // Minecraft
 });
-
 
 bot.loadPlugin(pathfinder);
 
@@ -18,12 +16,13 @@ let attacking = false;
 let attackingPlayer = false; 
 let targetPlayer = null; 
 
+console.log('Bot writed by Shuvee Dev')
+console.log('Source code availible on GitHub: https://github.com/ShuveeDev/MC-Client-JS')
 
 bot.on('login', () => {
     console.log(`✅ Підключено до сервера як ${bot.username}`);
     autoEquipArmor(); 
 });
-
 
 bot.on('message', (jsonMsg) => {
     const msg = jsonMsg.toString();
@@ -41,13 +40,11 @@ bot.on('death', () => {
     }, 2000); 
 });
 
-
 bot.on('entityHurt', (entity) => {
     if (entity === bot.entity) {
         bot.chat('⚠ Мене атакують!');
     }
 });
-
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -61,7 +58,6 @@ rl.on('line', (input) => {
         bot.chat(input);
     }
 });
-
 
 async function handleCommand(command) {
     const args = command.slice(1).split(' '); 
@@ -128,8 +124,14 @@ async function handleCommand(command) {
             case 'stop':
                 stopAttackingPlayer();
                 break;
+            case 'mine':
+                startMining();
+                break;
+            case 'minestop':
+                stopMining();
+                break;
             default:
-                bot.chat('❌ Невідома команда. Спробуйте .inv, .attach <slot>, .stats, .attackmob, .delitem <item>, .delall, .follow <player>, .followstop, .attack <player>, .stop');
+                bot.chat('❌ Невідома команда. Спробуйте .inv, .attach <slot>, .stats, .attackmob, .delitem <item>, .delall, .follow <player>, .followstop, .attack <player>, .stop, .mine, .minestop');
                 break;
         }
     } catch (error) {
@@ -163,7 +165,6 @@ function selectItem(itemName, count = 1) {
         bot.chat(`❌ Предмет "${itemName} x${count}" не знайдений в інвентарі.`);
     }
 }
-
 
 function autoEquipArmor() {
     const armorSlots = ['head', 'torso', 'legs', 'feet'];
@@ -214,9 +215,7 @@ async function startAttacking() {
                 a.position.distanceTo(bot.entity.position) - b.position.distanceTo(bot.entity.position)
             )[0];
 
-            
             bot.pathfinder.setGoal(new goals.GoalNear(nearestMob.position.x, nearestMob.position.y, nearestMob.position.z, 1));
-
 
             await bot.waitForTicks(10); 
             bot.attack(nearestMob);
@@ -230,12 +229,10 @@ async function startAttacking() {
     }
 }
 
-
 function stopAttacking() {
     attacking = false;
     bot.chat('🔴 Зупиняю атаку.');
 }
-
 
 async function startAttackingPlayer() {
     attackingPlayer = true; 
@@ -259,13 +256,11 @@ async function startAttackingPlayer() {
     }
 }
 
-
 function stopAttackingPlayer() {
     attackingPlayer = false;
     targetPlayer = null; 
     bot.chat('🔴 Зупиняю атаку на гравця.');
 }
-
 
 async function startFollowing() {
     following = true; // Встановлюємо статус слідування
@@ -285,7 +280,6 @@ async function startFollowing() {
     }
 }
 
-
 function stopFollowing() {
     following = false;
     targetPlayer = null; 
@@ -302,7 +296,6 @@ function dropItem(itemName, count = 1) {
     }
 }
 
-
 function dropAllItems() {
     const items = bot.inventory.items();
     if (items.length === 0) {
@@ -315,11 +308,70 @@ function dropAllItems() {
     }
 }
 
+let isDiggingDown = false; 
+
+async function startMining() {
+    mining = true;
+    bot.chat('⛏ Починаю шахтування.'); 
+
+    while (mining) {
+        const targetBlock = bot.findBlock({
+            point: bot.entity.position,
+            maxDistance: 16,
+            matching: block => miningTargets.includes(block.name)
+        });
+
+        if (targetBlock) {
+            isDiggingDown = false;
+            try {
+                await bot.pathfinder.goto(new goals.GoalNear(targetBlock.position.x, targetBlock.position.y, targetBlock.position.z, 1));
+                await bot.dig(targetBlock);
+            } catch (err) {
+                console.error('Помилка при копанні:', err);
+            }
+        } else {
+            if (!isDiggingDown) {
+                bot.chat('⛏ Копаю вниз...'); // 1 раз
+                isDiggingDown = true;
+            }
+            
+            const targetY = Math.floor(bot.entity.position.y) - 1;
+            await bot.pathfinder.goto(new goals.GoalNear(bot.entity.position.x, targetY, bot.entity.position.z, 1));
+            
+            const blockUnder = bot.blockAt(bot.entity.position.offset(0, -1, 0));
+            if (blockUnder && blockUnder.name !== 'air') {
+                await bot.dig(blockUnder);
+            }
+        }
+
+        const hostileMobs = Object.values(bot.entities).filter(entity => 
+            entity.type === 'mob' && 
+            entity.hostile && 
+            entity.position.distanceTo(bot.entity.position) < 3
+        );
+        
+        if (hostileMobs.length > 0) {
+            await bot.attack(hostileMobs[0]);
+        }
+
+        await bot.waitForTicks(20); 
+    }
+}
+
+function stopMining() {
+    mining = false;
+    bot.chat('🔴 Зупиняю шахтування.');
+
+    if (targetPlayer) {
+        startFollowing();
+    } else {
+        bot.chat('❌ Немає гравця, за яким слідувати.');
+    }
+}
 
 bot.on('end', () => {
     console.log('❌ Бот відключився від сервера.');
 });
-
 
 bot.on('error', (err) => {
     console.error('❌ Помилка:', err);
