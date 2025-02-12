@@ -61,7 +61,7 @@ mkdir mcbotjs && cd mcbotjs && git clone https://github.com/ShuveeDev/MC-Client-
 ## 🔧 Виникли проблеми?  
 ❌ **Модулі не встановлюються?**  
 📥 Завантажте їх вручну та помістіть у директорію з ботом:  
-🔗 [Завантажити node_modules](https://www.dropbox.com/scl/fi/5ei4hxbr2oz36o2qj6rto/node_modules.zip?rlkey=w922zpk6zss5vevt4sxb0y0ha&st=hygf2cae&dl=0)  
+🔗 [Завантажити node_modules](https://www.dropbox.com/scl/fi/5ei4hxbr2oz36o2qj6rto/node_modules.zip?rlkey=w922zpk6zss5vevt4sxb0y0ha&st=hygf2cae&dl=1)  
 
 ---
 
